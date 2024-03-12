@@ -76,6 +76,10 @@ func (s *SGS) ListenAndServe() (err error) {
 			broadcastSender.Send(clients, r)
 		default:
 			var buf [defaultUdpBufferSize]byte
+			if err := s.conn.SetReadDeadline(time.Now().Add(50 * time.Millisecond)); err != nil {
+				slog.Debug("set read deadline", "error", err)
+				continue
+			}
 			size, client, err := s.conn.ReadFromUDPAddrPort(buf[:])
 			if err != nil {
 				slog.Debug("read from udp", "error", err)
