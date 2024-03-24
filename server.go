@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
 	"net"
 	"sync"
@@ -72,38 +71,23 @@ func (s *SGS) ListenAndServe() (err error) {
 		case <-s.ctx.Done():
 			return fmt.Errorf("context is done: %w", s.ctx.Err())
 		case <-senderTicker.C:
-			clients, r := s.senderFn.Send()
-			broadcastSender.Send(clients, r)
+			addrs, r := s.senderFn.Send()
+			broadcastSender.Send(r, addrs...)
 		default:
 			var buf [defaultUdpBufferSize]byte
 			if err := s.conn.SetReadDeadline(time.Now().Add(50 * time.Millisecond)); err != nil {
 				slog.Debug("set read deadline", "error", err)
 				continue
 			}
-			size, client, err := s.conn.ReadFromUDPAddrPort(buf[:])
+			size, addr, err := s.conn.ReadFromUDPAddrPort(buf[:])
 			if err != nil {
 				slog.Debug("read from udp", "error", err)
 				continue
 			}
-			go func() {
-				wg.Add(1)
-				defer wg.Done()
-				r := bytes.NewBuffer(buf[:size])
-				w := new(bytes.Buffer)
-				s.handlerFn.ServeUDP(client, r, w)
-				if w.Len() > 0 {
-					data, err := io.ReadAll(w)
-					if err != nil {
-						slog.Debug("read from response", "error", err)
-						return
-					}
-					_, err = s.conn.WriteToUDPAddrPort(data, client)
-					if err != nil {
-						slog.Debug("write to udp", "error", err)
-						return
-					}
-				}
-			}()
+			r := bytes.NewBuffer(buf[:size])
+			w := new(bytes.Buffer)
+			s.handlerFn.ServeUDP(addr, r, w)
+			broadcastSender.Send(w, addr)
 		}
 	}
 }
