@@ -34,7 +34,7 @@ func (s *Sender) Run() {
 				}
 			}
 		case item := <-s.sendCh:
-			for _, c := range item.clients {
+			for _, c := range item.addrs {
 				if cl, ok := s.clients[c]; ok {
 					cl.lastSend = time.Now()
 					cl.ch <- item.data

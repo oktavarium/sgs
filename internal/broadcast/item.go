@@ -5,13 +5,13 @@ import (
 )
 
 type sendItem struct {
-	clients []netip.AddrPort
-	data    []byte
+	addrs []netip.AddrPort
+	data  []byte
 }
 
-func newSendItem(clients []netip.AddrPort, data []byte) sendItem {
+func newSendItem(addrs []netip.AddrPort, data []byte) sendItem {
 	return sendItem{
-		clients: clients,
-		data:    data,
+		addrs: addrs,
+		data:  data,
 	}
 }

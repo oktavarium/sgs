@@ -24,15 +24,15 @@ func NewSender(ctx context.Context, conn *net.UDPConn) Sender {
 	}
 }
 
-func (s *Sender) Send(clients []netip.AddrPort, r io.Reader) {
-	if clients == nil {
+func (s *Sender) Send(r io.Reader, addrs ...netip.AddrPort) {
+	if addrs == nil {
 		slog.Debug("no clients for broadcast")
 		return
 	}
 	data, err := io.ReadAll(r)
-	if err != nil {
+	if err != nil || data == nil {
 		slog.Debug("reading from send reader", "error", err)
 		return
 	}
-	s.sendCh <- newSendItem(clients, data)
+	s.sendCh <- newSendItem(addrs, data)
 }
